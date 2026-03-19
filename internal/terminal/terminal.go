@@ -16,15 +16,48 @@ type Terminal interface {
 }
 
 // NewTerminal creates a new terminal instance based on the terminal type.
+// An empty string defaults to headless mode.
 func NewTerminal(terminalType string) (Terminal, error) {
 	switch terminalType {
 	case "iterm":
 		return &ITermTerminal{}, nil
 	case "ghostty":
 		return &GhosttyTerminal{}, nil
+	case "headless", "":
+		return &HeadlessTerminal{}, nil
 	default:
-		return nil, fmt.Errorf("unsupported terminal type: %s", terminalType)
+		return nil, fmt.Errorf("unsupported terminal type: %s (supported: iterm, ghostty, headless)", terminalType)
 	}
+}
+
+// HeadlessTerminal prints commands instead of opening terminal tabs.
+type HeadlessTerminal struct{}
+
+func (t *HeadlessTerminal) Name() string { return "headless" }
+
+func (t *HeadlessTerminal) OpenTab(workDir, command string) error {
+	fmt.Printf("\n  cd %s && %s\n", workDir, command)
+	return nil
+}
+
+func (t *HeadlessTerminal) OpenTabWithResume(workDir, sessionID, claudeBin, model string) error {
+	cmd := claudeBin
+	if model != "" {
+		cmd += fmt.Sprintf(" --model %s", model)
+	}
+	cmd += fmt.Sprintf(" --resume %s", sessionID)
+	fmt.Printf("\n  cd %s && %s\n", workDir, cmd)
+	return nil
+}
+
+func (t *HeadlessTerminal) OpenTabWithClaude(workDir, initialPrompt, claudeBin, model string) error {
+	cmd := claudeBin
+	if model != "" {
+		cmd += fmt.Sprintf(" --model %s", model)
+	}
+	cmd += fmt.Sprintf(" %q", initialPrompt)
+	fmt.Printf("\n  cd %s && %s\n", workDir, cmd)
+	return nil
 }
 
 // ITermTerminal wraps the iTerm functions.
