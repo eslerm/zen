@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -144,9 +145,37 @@ func SessionFilePath(worktreePath, sessionID string) string {
 // IsProcessRunning checks if a Claude process is running for the given session ID
 // by looking for a process whose command line contains the session ID.
 func IsProcessRunning(sessionID string) bool {
+	if runtime.GOOS == "linux" {
+		return isProcessRunningProc(sessionID)
+	}
+	// macOS / BSD fallback
 	cmd := exec.Command("pgrep", "-f", sessionID)
-	err := cmd.Run()
-	return err == nil
+	return cmd.Run() == nil
+}
+
+// isProcessRunningProc scans /proc/*/cmdline for the session ID.
+func isProcessRunningProc(sessionID string) bool {
+	entries, err := os.ReadDir("/proc")
+	if err != nil {
+		return false
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		// Only check numeric (PID) directories
+		if len(e.Name()) == 0 || e.Name()[0] < '0' || e.Name()[0] > '9' {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join("/proc", e.Name(), "cmdline"))
+		if err != nil {
+			continue
+		}
+		if strings.Contains(string(data), sessionID) {
+			return true
+		}
+	}
+	return false
 }
 
 // ParseSessionDetailTail reads the last tailSize bytes of a session file
