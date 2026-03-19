@@ -23,8 +23,8 @@ var reviewCmd = &cobra.Command{
 	Long: `Manage PR review worktrees.
 
 Usage:
-  zen review <pr-number>           Create worktree + open iTerm tab
-  zen review resume <pr-number>    Resume existing session in new tab
+  zen review <pr-number>           Create worktree + open terminal tab (or print command)
+  zen review resume <pr-number>    Resume existing session
   zen review delete <pr-number>    Delete a PR review worktree`,
 	DisableFlagParsing: false,
 	RunE:               runReview,
@@ -32,7 +32,7 @@ Usage:
 
 var reviewResumeCmd = &cobra.Command{
 	Use:   "resume <pr-number>",
-	Short: "Resume a PR review session in a new iTerm2 tab",
+	Short: "Resume a PR review session",
 	Args:  cobra.ExactArgs(1),
 	RunE:  runReviewResume,
 }
@@ -124,7 +124,13 @@ func runReview(cmd *cobra.Command, args []string) error {
 		ui.LogInfo(fmt.Sprintf("Warning: could not install /review-pr command: %v", err))
 	}
 
-	if reviewNoITerm {
+	// Open terminal tab (or print command in headless mode)
+	term, err := terminal.NewTerminal(cfg.GetTerminal())
+	if err != nil {
+		return err
+	}
+
+	if reviewNoITerm || term.Name() == "headless" {
 		fmt.Println()
 		fmt.Println(ui.BoldText("Open manually:"))
 		modelFlag := ""
@@ -133,12 +139,6 @@ func runReview(cmd *cobra.Command, args []string) error {
 		}
 		fmt.Printf("  cd %s && %s%s \"/review-pr\"\n", result.WorktreePath, cfg.ClaudeBin, modelFlag)
 		return nil
-	}
-
-	// Open terminal tab
-	term, err := terminal.NewTerminal(cfg.GetTerminal())
-	if err != nil {
-		return err
 	}
 
 	if err := term.OpenTabWithClaude(result.WorktreePath, "/review-pr", cfg.ClaudeBin, reviewModel); err != nil {

@@ -87,8 +87,8 @@ func resumeWorktree(wt worktree.Worktree, cmdName string, t terminal.Terminal) e
 	home := os.Getenv("HOME")
 	shortPath := ui.ShortenHome(wt.Path, home)
 
-	// No-iTerm mode
-	if resumeNoITerm {
+	// Headless or --no-terminal mode
+	if resumeNoITerm || t.Name() == "headless" {
 		fmt.Println()
 		fmt.Println(ui.BoldText("Resume command:"))
 		modelFlag := ""
@@ -140,7 +140,8 @@ func openNewSession(wt worktree.Worktree, t terminal.Terminal) error {
 		}
 	}
 
-	if resumeNoITerm {
+	// Headless or --no-terminal mode
+	if resumeNoITerm || t.Name() == "headless" {
 		fmt.Println()
 		fmt.Println(ui.BoldText("Start command:"))
 		modelFlag := ""

@@ -21,10 +21,10 @@ var workCmd = &cobra.Command{
 
 var workNewCmd = &cobra.Command{
 	Use:   "new <repo> <branch> [context]",
-	Short: "Create a new feature worktree and open in iTerm2",
-	Long: `Create a new feature worktree from origin/main and open it in a new iTerm2 tab.
+	Short: "Create a new feature worktree",
+	Long: `Create a new feature worktree from origin/main and open it in a terminal tab.
 
-The branch will be prefixed with mgreau/ per naming convention.
+The branch will be prefixed with your branch_prefix config value (or git user name).
 Optionally provide a context string to use as the initial Claude prompt.`,
 	Args: cobra.RangeArgs(2, 3),
 	RunE: runWorkNew,
@@ -43,7 +43,7 @@ Shows a summary of what will be removed before confirming.`,
 
 var workResumeCmd = &cobra.Command{
 	Use:   "resume <name>",
-	Short: "Resume a feature work session in a new iTerm2 tab",
+	Short: "Resume a feature work session",
 	Args:  cobra.ExactArgs(1),
 	RunE:  runWorkResume,
 }
@@ -188,7 +188,13 @@ func runWorkNew(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  Model:  %s\n", ui.CyanText(workNewModel))
 	}
 
-	if workNewNoITerm {
+	// Open terminal tab (or print command in headless mode)
+	term, err := terminal.NewTerminal(cfg.GetTerminal())
+	if err != nil {
+		return err
+	}
+
+	if workNewNoITerm || term.Name() == "headless" {
 		fmt.Println()
 		fmt.Println(ui.BoldText("Open manually:"))
 		modelFlag := ""
@@ -201,12 +207,6 @@ func runWorkNew(cmd *cobra.Command, args []string) error {
 			fmt.Printf("  cd %s && %s%s\n", worktreePath, cfg.ClaudeBin, modelFlag)
 		}
 		return nil
-	}
-
-	// Open terminal tab
-	term, err := terminal.NewTerminal(cfg.GetTerminal())
-	if err != nil {
-		return err
 	}
 
 	if context != "" {

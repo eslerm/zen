@@ -40,8 +40,10 @@ func runSetup(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 	fmt.Println("Prerequisites:")
 	fmt.Println("  gh auth login       — authenticate GitHub CLI")
-	fmt.Println("  iTerm2 installed    — for tab management")
 	fmt.Println("  claude installed    — Claude Code CLI")
+	fmt.Println()
+	fmt.Println("Optional:")
+	fmt.Println("  iTerm2 or Ghostty   — for terminal tab management (headless if omitted)")
 	fmt.Println()
 
 	// Check for existing config
