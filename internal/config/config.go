@@ -17,8 +17,9 @@ type Config struct {
 	Authors      []string              `yaml:"authors"`
 	PollInterval string                `yaml:"poll_interval"`
 	ClaudeBin    string                `yaml:"claude_bin"`
-	Terminal     string                `yaml:"terminal"` // "iterm" or "ghostty"
-	Watch        WatchConfig           `yaml:"watch"`
+	Terminal      string                `yaml:"terminal,omitempty"`       // "iterm", "ghostty", or "" (headless)
+	BranchPrefix  string                `yaml:"branch_prefix,omitempty"` // prefix for feature branches (default: git user)
+	Watch         WatchConfig           `yaml:"watch"`
 }
 
 // WatchConfig holds configuration for the watch daemon's workqueue behavior.
@@ -108,11 +109,12 @@ func Load() (*Config, error) {
 	if cfg.ClaudeBin == "" {
 		cfg.ClaudeBin = "claude"
 	}
-	if cfg.Terminal == "" {
-		cfg.Terminal = "iterm" // default to iTerm for backward compatibility
-	}
-	if cfg.Terminal != "iterm" && cfg.Terminal != "ghostty" {
-		return nil, fmt.Errorf("invalid terminal type %q: must be \"iterm\" or \"ghostty\"", cfg.Terminal)
+	// Terminal is optional — empty means headless (no tab opening).
+	switch cfg.Terminal {
+	case "", "headless", "iterm", "ghostty":
+		// valid
+	default:
+		return nil, fmt.Errorf("invalid terminal type %q: must be \"iterm\", \"ghostty\", \"headless\", or empty", cfg.Terminal)
 	}
 	if cfg.Repos == nil {
 		cfg.Repos = make(map[string]RepoConfig)

@@ -13,7 +13,8 @@ func TestNewTerminal(t *testing.T) {
 	}{
 		{"iterm explicit", "iterm", "iTerm2", false},
 		{"ghostty", "ghostty", "Ghostty", false},
-		{"empty is invalid", "", "", true},
+		{"headless explicit", "headless", "headless", false},
+		{"empty defaults to headless", "", "headless", false},
 		{"invalid terminal", "invalid", "", true},
 	}
 
@@ -45,5 +46,33 @@ func TestGhosttyTerminalName(t *testing.T) {
 	term := &GhosttyTerminal{}
 	if got := term.Name(); got != "Ghostty" {
 		t.Errorf("GhosttyTerminal.Name() = %q, want %q", got, "Ghostty")
+	}
+}
+
+func TestHeadlessTerminalName(t *testing.T) {
+	term := &HeadlessTerminal{}
+	if got := term.Name(); got != "headless" {
+		t.Errorf("HeadlessTerminal.Name() = %q, want %q", got, "headless")
+	}
+}
+
+func TestHeadlessTerminalOpenTab(t *testing.T) {
+	term := &HeadlessTerminal{}
+	if err := term.OpenTab("/tmp/test", "echo hello"); err != nil {
+		t.Errorf("HeadlessTerminal.OpenTab() error = %v", err)
+	}
+}
+
+func TestHeadlessTerminalOpenTabWithResume(t *testing.T) {
+	term := &HeadlessTerminal{}
+	if err := term.OpenTabWithResume("/tmp/test", "session-123", "claude", "sonnet"); err != nil {
+		t.Errorf("HeadlessTerminal.OpenTabWithResume() error = %v", err)
+	}
+}
+
+func TestHeadlessTerminalOpenTabWithClaude(t *testing.T) {
+	term := &HeadlessTerminal{}
+	if err := term.OpenTabWithClaude("/tmp/test", "/review-pr", "claude", ""); err != nil {
+		t.Errorf("HeadlessTerminal.OpenTabWithClaude() error = %v", err)
 	}
 }
