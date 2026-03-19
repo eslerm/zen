@@ -2,18 +2,35 @@ package notify
 
 import (
 	"fmt"
+	"log"
 	"os/exec"
 )
 
-// Send sends a macOS notification using osascript.
+// Send sends a desktop notification using the platform-appropriate tool.
+// Falls back gracefully: osascript (macOS) -> notify-send (Linux) -> log only.
 func Send(title, message, subtitle string) error {
-	script := fmt.Sprintf(`display notification %q with title %q`, message, title)
-	if subtitle != "" {
-		script = fmt.Sprintf(`display notification %q with title %q subtitle %q`, message, title, subtitle)
+	// Try macOS osascript
+	if path, err := exec.LookPath("osascript"); err == nil {
+		script := fmt.Sprintf(`display notification %q with title %q`, message, title)
+		if subtitle != "" {
+			script = fmt.Sprintf(`display notification %q with title %q subtitle %q`, message, title, subtitle)
+		}
+		return exec.Command(path, "-e", script).Run()
 	}
-	return exec.Command("osascript", "-e", script).Run()
-}
 
+	// Try Linux notify-send
+	if path, err := exec.LookPath("notify-send"); err == nil {
+		body := message
+		if subtitle != "" {
+			body = fmt.Sprintf("%s\n%s", subtitle, message)
+		}
+		return exec.Command(path, title, body).Run()
+	}
+
+	// No notification tool available — log and continue
+	log.Printf("[notify] %s: %s", title, message)
+	return nil
+}
 
 // PRReview notifies about a new PR review request.
 func PRReview(prNumber int, prTitle, author, repo string) error {
